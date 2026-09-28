@@ -1,22 +1,28 @@
 package edu.sfsu.csc413.chess.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The knight: two squares along one axis, one along the other, jumping over
- * anything in between.
+ * A knight chess piece.
  *
- * <p>The knight is the clearest illustration of why this design works. Its rule
- * is unlike any other piece's — it is the only one that ignores blocking
- * pieces — and yet it needs no special case anywhere else in the engine. It
- * simply answers the question every piece is asked.
+ * A knight moves in an L-shape and can jump over other pieces.
  */
 public class Knight extends Piece {
 
     /**
-     * The eight L-shapes, as {file, rank} deltas.
+     * All eight possible knight moves.
      */
-    private static final int[][] OFFSETS = { { 1, 2 }, { 2, 1 }, { 2, -1 }, { 1, -2 }, { -1, -2 }, { -2, -1 }, { -2, 1 }, { -1, 2 } };
+    private static final int[][] OFFSETS = {
+            { 1, 2 },
+            { 2, 1 },
+            { 2, -1 },
+            { 1, -2 },
+            { -1, -2 },
+            { -2, -1 },
+            { -2, 1 },
+            { -1, 2 }
+    };
 
     public Knight(Color color) {
         super(color, PieceType.KNIGHT);
@@ -24,6 +30,36 @@ public class Knight extends Piece {
 
     @Override
     public List<Move> pseudoLegalMoves(Board board, Position from) {
-        throw new UnsupportedOperationException("M2: implement Knight.pseudoLegalMoves");
+        List<Move> moves = new ArrayList<>();
+
+        for (int[] offset : OFFSETS) {
+
+            // Find the square the knight would move to
+            Position to = from.offsetOrNull(offset[0], offset[1]);
+
+            // Ignore moves that go outside the board
+            if (to == null) {
+                continue;
+            }
+
+            Piece pieceAtDestination = board.pieceAt(to);
+
+            // Empty square = normal move
+            if (pieceAtDestination == null) {
+                moves.add(Move.quiet(from, to, this));
+            }
+
+            // Opponent piece = capture
+            else if (pieceAtDestination.color() != color()) {
+                moves.add(Move.capture(
+                        from,
+                        to,
+                        this,
+                        pieceAtDestination
+                ));
+            }
+        }
+
+        return moves;
     }
 }

@@ -1,41 +1,27 @@
 package edu.sfsu.csc413.chess.model;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The queen: slides along both the straight and the diagonal directions.
- *
- * <p>A queen moves like a rook and a bishop combined, and Java's single
- * inheritance will not let it extend both. That limitation is worth sitting
- * with, because the instinct it provokes — "then let me borrow their direction
- * tables" — is the wrong one. An earlier version of this class did exactly
- * that, deriving its eight directions from {@code Rook.DIRECTIONS} and
- * {@code Bishop.DIRECTIONS}. It worked, and it was clever, and it cost more
- * than it saved:
- *
- * <ul>
- *   <li>both sibling classes had to loosen their tables from {@code private} to
- *       package-private, so a detail of how a rook moves became visible to
- *       every class in the package;
- *   <li>the arrays were <em>shared</em>, not copied — Java arrays cannot be made
- *       immutable, so any one of the three classes could have scribbled on data
- *       the other two depend on;
- *   <li>and a reader asking the simple question "which way does a queen move?"
- *       had to open two other files to find out.
- * </ul>
- *
- * <p>Eight literal pairs answer that question on sight, and they do not couple
- * this class to anything. Duplication is not free, but it is cheaper here than
- * the coupling it would have bought us — which is the judgement call the DRY
- * principle actually asks you to make, rather than the reflex it is often
- * mistaken for.
+ * The queen: slides along both straight and diagonal directions.
  */
 public class Queen extends Piece {
 
     /**
-     * All eight directions: the four straight and the four diagonal.
+     * All eight directions:
+     * four straight and four diagonal.
      */
-    private static final int[][] DIRECTIONS = { { 0, 1 }, { 1, 0 }, { 0, -1 }, { -1, 0 }, { 1, 1 }, { 1, -1 }, { -1, -1 }, { -1, 1 } };
+    private static final int[][] DIRECTIONS = {
+            { 0, 1 },
+            { 1, 0 },
+            { 0, -1 },
+            { -1, 0 },
+            { 1, 1 },
+            { 1, -1 },
+            { -1, -1 },
+            { -1, 1 }
+    };
 
     public Queen(Color color) {
         super(color, PieceType.QUEEN);
@@ -43,6 +29,52 @@ public class Queen extends Piece {
 
     @Override
     public List<Move> pseudoLegalMoves(Board board, Position from) {
-        throw new UnsupportedOperationException("M2: implement Queen.pseudoLegalMoves");
+        List<Move> moves = new ArrayList<>();
+
+        for (int[] direction : DIRECTIONS) {
+            int fileStep = direction[0];
+            int rankStep = direction[1];
+
+            int distance = 1;
+
+            while (true) {
+                Position to = from.offsetOrNull(
+                        fileStep * distance,
+                        rankStep * distance
+                );
+
+                // Stop when the queen reaches the edge of the board
+                if (to == null) {
+                    break;
+                }
+
+                Piece pieceAtDestination = board.pieceAt(to);
+
+                // Empty square: queen can move there and keep going
+                if (pieceAtDestination == null) {
+                    moves.add(Move.quiet(from, to, this));
+                }
+
+                // Opponent piece: capture it and stop in this direction
+                else if (pieceAtDestination.color() != color()) {
+                    moves.add(Move.capture(
+                            from,
+                            to,
+                            this,
+                            pieceAtDestination
+                    ));
+                    break;
+                }
+
+                // Our own piece blocks the queen
+                else {
+                    break;
+                }
+
+                distance++;
+            }
+        }
+
+        return moves;
     }
 }
