@@ -4,22 +4,15 @@ import edu.sfsu.csc413.chess.factory.BoardFactory;
 import edu.sfsu.csc413.chess.model.Board;
 import edu.sfsu.csc413.chess.model.Color;
 import edu.sfsu.csc413.chess.model.Move;
+import edu.sfsu.csc413.chess.model.Position;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 /**
- * One game of chess: the board, whose turn it is, and the moves played so far.
- *
- * <p>Everything outside the engine — the console view, the controller,
- * eventually an AI — talks to this class and to nothing behind it. The view
- * never applies a move to a {@link Board} directly. That single rule is what
- * will let us swap the console for a graphical UI later without changing a
- * line of the rules.
- *
- * <p>{@code Game} is built by composition: it <em>has</em> a board, a history,
- * and a side to move, and it owns all three. Nothing else holds them.
+ * One game of chess: the board, whose turn it is,
+ * and the moves played so far.
  */
 public class Game {
 
@@ -37,74 +30,111 @@ public class Game {
     }
 
     /**
-     * Starts a game from a given position — used by tests and FEN loading.
+     * Starts a game from a given board and side to move.
      */
     public Game(Board board, Color sideToMove) {
         this.board = board;
         this.sideToMove = sideToMove;
     }
 
+    /**
+     * Returns the board for this game.
+     */
     public Board board() {
-        throw new UnsupportedOperationException("M3: implement Game.board");
-    }
-
-    public Color sideToMove() {
-        throw new UnsupportedOperationException("M3: implement Game.sideToMove");
+        return board;
     }
 
     /**
-     * The moves played so far, oldest first.
+     * Returns the side whose turn it is.
+     */
+    public Color sideToMove() {
+        return sideToMove;
+    }
+
+    /**
+     * Returns a copy of the moves played so far.
      *
-     * <p>Returns a copy. The list {@code Game} keeps is private, and handing it
-     * out would let any caller rewrite the game's past.
+     * Returning a copy prevents callers from changing
+     * the game's private history.
      */
     public List<Move> history() {
-        throw new UnsupportedOperationException("M3: implement Game.history");
+        return List.copyOf(history);
     }
 
     /**
-     * Every move the side to move may play right now.
+     * Returns every pseudo-legal move for the side to move.
      *
-     * <p>At M3 "legal" means the right colour and the right geometry: every
-     * pseudo-legal move of every piece belonging to {@link #sideToMove()}. King
-     * safety arrives in M5 and tightens this method without changing its name
-     * or its callers.
+     * At M3, legal means the correct color and correct
+     * piece movement. King safety is handled later.
      */
     public List<Move> legalMoves() {
-        throw new UnsupportedOperationException("M3: implement Game.legalMoves");
+        List<Move> moves = new ArrayList<>();
+
+        for (Position from : board.positionsOf(sideToMove)) {
+            moves.addAll(
+                    board.pieceAt(from).pseudoLegalMoves(board, from)
+            );
+        }
+
+        return moves;
     }
 
     /**
-     * Finds the legal move matching notation such as {@code "e2e4"} or
-     * {@code "e7e8q"}, if there is one.
+     * Finds a legal move that matches the given notation.
      *
-     * <p>Returning an {@link Optional} rather than null or an exception says
-     * plainly that "no such move" is an ordinary outcome here — the player
-     * simply typed something they cannot play — and it makes the caller deal
-     * with that case.
+     * For example: e2e4 or e7e8q.
      */
     public Optional<Move> findLegalMove(String notation) {
-        throw new UnsupportedOperationException("M3: implement Game.findLegalMove");
+        for (Move move : legalMoves()) {
+            if (move.toString().equalsIgnoreCase(notation)) {
+                return Optional.of(move);
+            }
+        }
+
+        return Optional.empty();
     }
 
     /**
-     * Plays a move and passes the turn.
-     *
-     * @throws IllegalArgumentException if the move is not currently legal —
-     *         a programming error, since callers should choose from
-     *         {@link #legalMoves()}
+     * Plays a legal move and passes the turn.
      */
     public void play(Move move) {
-        throw new UnsupportedOperationException("M3: implement Game.play");
+
+        // Game decides whether the move is legal.
+        if (!legalMoves().contains(move)) {
+            throw new IllegalArgumentException(
+                    "Illegal move: " + move
+            );
+        }
+
+        // Apply the move to the board.
+        board.apply(move);
+
+        // Remember the move so it can be undone later.
+        history.add(move);
+
+        // Give the turn to the other side.
+        sideToMove = sideToMove.opposite();
     }
 
     /**
-     * Takes back the most recent move, returning it if there was one.
-     *
-     * <p>Undo costs us almost nothing because {@link Move} already records what
-     * was captured. In Week 10 this becomes the Command pattern proper.
+     * Undoes the most recently played move.
      */
     public Optional<Move> undoLastMove() {
-        throw new UnsupportedOperationException("M3: implement Game.undoLastMove");
+
+        // There is nothing to undo.
+        if (history.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // Remove the most recent move.
+        Move move = history.remove(history.size() - 1);
+
+        // Restore the board.
+        board.undo(move);
+
+        // Give the turn back to the previous player.
+        sideToMove = sideToMove.opposite();
+
+        return Optional.of(move);
     }
 }

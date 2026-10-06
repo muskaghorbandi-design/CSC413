@@ -1,57 +1,37 @@
 package edu.sfsu.csc413.chess;
 
-import edu.sfsu.csc413.chess.factory.PieceFactory;
-import edu.sfsu.csc413.chess.model.Board;
-import edu.sfsu.csc413.chess.model.Color;
-import edu.sfsu.csc413.chess.model.PieceType;
-import edu.sfsu.csc413.chess.model.Position;
+import edu.sfsu.csc413.chess.engine.Game;
 import edu.sfsu.csc413.chess.view.PieceGlyphs;
 import edu.sfsu.csc413.chess.view.TextBoardRenderer;
+
+import java.util.List;
 
 public final class Main {
 
     public static void main(String[] args) {
-        Board board = new Board();
+        Game game = new Game();
 
-        PieceType[] backRank = {
-                PieceType.ROOK,
-                PieceType.KNIGHT,
-                PieceType.BISHOP,
-                PieceType.QUEEN,
-                PieceType.KING,
-                PieceType.BISHOP,
-                PieceType.KNIGHT,
-                PieceType.ROOK
-        };
+        TextBoardRenderer renderer =
+                new TextBoardRenderer(PieceGlyphs.LETTERS);
 
-        for (int file = 0; file < 8; file++) {
+        // Print the starting board.
+        System.out.println(renderer.render(game.board()));
 
-            // White pieces
-            board.place(
-                    new Position(file, 0),
-                    PieceFactory.create(backRank[file], Color.WHITE)
-            );
-
-            board.place(
-                    new Position(file, 1),
-                    PieceFactory.create(PieceType.PAWN, Color.WHITE)
-            );
-
-            // Black pieces
-            board.place(
-                    new Position(file, 6),
-                    PieceFactory.create(PieceType.PAWN, Color.BLACK)
-            );
-
-            board.place(
-                    new Position(file, 7),
-                    PieceFactory.create(backRank[file], Color.BLACK)
+        // Play e2e4 and e7e5 through Game.
+        for (String notation : List.of("e2e4", "e7e5")) {
+            game.play(
+                    game.findLegalMove(notation).orElseThrow()
             );
         }
 
-        System.out.println(
-                new TextBoardRenderer(PieceGlyphs.LETTERS).render(board)
-        );
+        // Print the board after both moves.
+        System.out.println(renderer.render(game.board()));
+
+        // Undo Black's move.
+        game.undoLastMove();
+
+        // Print the board again.
+        System.out.println(renderer.render(game.board()));
     }
 
     private Main() {
