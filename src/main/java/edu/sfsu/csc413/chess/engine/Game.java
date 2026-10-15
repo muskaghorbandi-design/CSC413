@@ -1,10 +1,10 @@
+
 package edu.sfsu.csc413.chess.engine;
 
 import edu.sfsu.csc413.chess.factory.BoardFactory;
 import edu.sfsu.csc413.chess.model.Board;
 import edu.sfsu.csc413.chess.model.Color;
 import edu.sfsu.csc413.chess.model.Move;
-import edu.sfsu.csc413.chess.model.Position;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -64,19 +64,11 @@ public class Game {
     /**
      * Returns every pseudo-legal move for the side to move.
      *
-     * At M3, legal means the correct color and correct
-     * piece movement. King safety is handled later.
+     * In M4, MoveGenerator handles move generation.
+     * King safety will be handled in M5.
      */
     public List<Move> legalMoves() {
-        List<Move> moves = new ArrayList<>();
-
-        for (Position from : board.positionsOf(sideToMove)) {
-            moves.addAll(
-                    board.pieceAt(from).pseudoLegalMoves(board, from)
-            );
-        }
-
-        return moves;
+        return MoveGenerator.legalMoves(board, sideToMove);
     }
 
     /**
