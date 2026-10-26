@@ -40,7 +40,24 @@ public class Board {
 
         return positions;
     }
+    /**
+     * Finds the king of the given color on the board.
+     * Returns null if the king is not found.
+     *
+     * @param color the king's color
+     * @return the king's position or null
+     */
+    public Position kingPosition(Color color) {
+        for (Position position : positionsOf(color)) {
+            Piece piece = pieceAt(position);
 
+            if (piece.type() == PieceType.KING) {
+                return position;
+            }
+        }
+
+        return null;
+    }
     /**
      * Applies a move to the board.
      * Game is responsible for deciding whether the move is legal.
