@@ -1,39 +1,39 @@
+
 package edu.sfsu.csc413.chess;
 
 import edu.sfsu.csc413.chess.engine.Game;
-import edu.sfsu.csc413.chess.view.PieceGlyphs;
-import edu.sfsu.csc413.chess.view.TextBoardRenderer;
+import edu.sfsu.csc413.chess.view.BoardView;
+import edu.sfsu.csc413.chess.view.ConsoleView;
+import edu.sfsu.csc413.chess.view.EmojiView;
+import edu.sfsu.csc413.chess.view.GameController;
 
-import java.util.List;
-
+/**
+ * Starts a chess game using the selected view.
+ */
 public final class Main {
 
-    public static void main(String[] args) {
-        Game game = new Game();
-
-        TextBoardRenderer renderer =
-                new TextBoardRenderer(PieceGlyphs.LETTERS);
-
-        // Print the starting board.
-        System.out.println(renderer.render(game.board()));
-
-        // Play e2e4 and e7e5 through Game.
-        for (String notation : List.of("e2e4", "e7e5")) {
-            game.play(
-                    game.findLegalMove(notation).orElseThrow()
-            );
-        }
-
-        // Print the board after both moves.
-        System.out.println(renderer.render(game.board()));
-
-        // Undo Black's move.
-        game.undoLastMove();
-
-        // Print the board again.
-        System.out.println(renderer.render(game.board()));
+    private Main() {
     }
 
-    private Main() {
+    public static void main(String[] args) {
+
+        // Create a new game.
+        Game game = new Game();
+
+        // Select the console or emoji view.
+        BoardView view;
+
+        if (args.length > 0 && args[0].equals("emoji")) {
+            view = new EmojiView();
+        } else {
+            view = new ConsoleView();
+        }
+
+        // Connect the model and view.
+        GameController controller =
+                new GameController(game, view);
+
+        // Start the game.
+        controller.start();
     }
 }

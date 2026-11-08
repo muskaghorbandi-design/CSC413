@@ -1,62 +1,137 @@
+
 package edu.sfsu.csc413.chess.view;
 
 import edu.sfsu.csc413.chess.engine.Game;
+import edu.sfsu.csc413.chess.engine.GameStatus;
+import edu.sfsu.csc413.chess.model.Move;
+import edu.sfsu.csc413.chess.model.PieceType;
+
+import java.util.List;
+import java.util.Optional;
 
 /**
- * Connects the player's decisions to the game: carry out what was asked, then
- * ask the view to redraw.
- *
- * <p>This is the C in MVC. It is the only class that knows about both the
- * {@link Game} and the {@link BoardView}. It holds no game state of its own:
- * the model owns the position, the view owns the display, and the controller
- * owns only the conversation between them.
- *
- * <p>When you are done, this class mentions no {@code Scanner}, no
- * {@code System.out}, no window, and none of the words "undo", "moves", or
- * "quit". Those belong to the view and to {@link PlayerAction#parse}.
+ * Connects player actions to the chess game.
+ * The model handles rules, and the view handles display.
  */
 public class GameController {
 
     private final Game game;
     private final BoardView view;
+    private boolean stopped;
 
     public GameController(Game game, BoardView view) {
         this.game = game;
         this.view = view;
     }
 
-    /** The game being played, so a view can read it in order to draw it. */
+    /**
+     * Returns the game used by this controller.
+     */
     public Game game() {
         return game;
     }
 
     /**
-     * Greets the player, draws the opening position, and hands control to the
-     * view with {@link BoardView#start}.
+     * Welcomes the player, draws the board,
+     * and starts the selected view.
      */
     public void start() {
-        throw new UnsupportedOperationException("M6: implement GameController.start");
+        view.showMessage("Welcome to Chess!");
+        view.render(game);
+        view.start(this);
     }
 
     /**
-     * The ask-and-handle loop, for views that can wait for input.
-     *
-     * <p>Asks the view for the next action and handles it, until the player
-     * quits or the game is over. A console view calls this from its
-     * {@code start}; an event-driven view never calls it.
+     * Handles actions until the game ends
+     * or the player chooses to stop.
      */
     public void runLoop() {
-        throw new UnsupportedOperationException("M6: implement GameController.runLoop");
+        while (!stopped && !game.isGameOver()) {
+            PlayerAction action = view.nextAction(game);
+            handle(action);
+        }
     }
 
     /**
-     * Carries out one player action and redraws.
-     *
-     * <p>Every route into the game goes through here: {@link #runLoop()} calls
-     * it, and so will a button's click handler in M7. The handout lists what
-     * each of the four actions does and what the player is told.
+     * Handles one action and updates the view.
      */
     public void handle(PlayerAction action) {
-        throw new UnsupportedOperationException("M6: implement GameController.handle");
+
+        if (stopped || game.isGameOver()) {
+            return;
+        }
+
+        switch (action) {
+            case PlayerAction.Move moveAction -> {
+                String notation = moveAction.notation();
+                Optional<Move> move =
+                        game.findLegalMove(notation);
+
+                // Ask for a promotion piece if one was not given.
+                if (move.isEmpty() && notation.length() == 4) {
+                    PieceType choice = view.promotionChoice(game);
+
+                    String promotionNotation = notation
+                            + Character.toLowerCase(choice.symbol());
+
+                    move = game.findLegalMove(promotionNotation);
+                }
+
+                if (move.isPresent()) {
+                    game.play(move.get());
+                } else {
+                    view.showMessage(
+                            "Not a legal move: '" + notation + "'."
+                    );
+                }
+            }
+
+            case PlayerAction.Undo ignored -> {
+                if (game.undoLastMove().isEmpty()) {
+                    view.showMessage("Nothing to undo.");
+                }
+            }
+
+            case PlayerAction.ShowMoves ignored -> {
+                List<String> moves = game.legalMoves()
+                        .stream()
+                        .map(Move::toString)
+                        .sorted()
+                        .toList();
+
+                view.showMessage(
+                        moves.size() + " legal moves: "
+                                + String.join(" ", moves)
+                );
+            }
+
+            case PlayerAction.Quit ignored -> {
+                stopped = true;
+                view.showMessage("Goodbye.");
+                view.close();
+                return;
+            }
+        }
+
+        view.render(game);
+
+        if (game.isGameOver()) {
+            GameStatus status = game.status();
+
+            if (status == GameStatus.CHECKMATE) {
+                view.showMessage(
+                        "Checkmate. "
+                                + game.sideToMove().opposite()
+                                + " wins."
+                );
+            } else if (status == GameStatus.STALEMATE) {
+                view.showMessage(
+                        "Stalemate. The game is a draw."
+                );
+            }
+
+            stopped = true;
+            view.close();
+        }
     }
 }
