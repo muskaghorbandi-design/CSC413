@@ -104,7 +104,7 @@ public class SwingView implements BoardView {
                         : (file + rank) % 2 == 0 ? new Color(160, 175, 195)
                         : new Color(245, 240, 225));
                 square.setBorder(BorderFactory.createLineBorder(
-                        position.equals(selected) ? new Color(190, 95, 0) : Color.DARK_GRAY,
+                        position.equals(selected) ?Color.YELLOW : Color.DARK_GRAY,
                         position.equals(selected) ? 4 : 1));
                 square.setToolTipText(position + (piece == null ? " (empty)"
                         : " " + piece.color() + " " + piece.type()));
